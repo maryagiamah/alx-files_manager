@@ -9,15 +9,13 @@ class RedisClient {
   }
 
   isAlive() {
-    if (this.client.connected) {
-      return true;
-    }
-    return false;
+    return this.client.connected;
   }
 
   async get(key) {
     const asyncGet = promisify(this.client.get).bind(this.client);
-    return asyncGet(key);
+    const val = await asyncGet(key);
+    return val;
   }
 
   async set(key, val, dur) {
