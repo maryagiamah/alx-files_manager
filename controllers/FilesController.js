@@ -32,8 +32,8 @@ class FilesController {
     }
     const { name } = request.body;
     const { type } = request.body;
-    const { parentId } = request.body;
-    const isPublic = request.body.isPublic || false;
+    const { parentId = 0 } = request.body;
+    const { isPublic = false } = request.body;
     const { data } = request.body;
     if (!name) {
       return response.status(400).json({ error: 'Missing name' });
@@ -62,7 +62,7 @@ class FilesController {
           userId: user._id,
           name,
           type,
-          parentId: parentId || 0,
+          parentId: parentId ? ObjectID(parentId) : parentId,
           isPublic,
         },
       ).then((result) => response.status(201).json({
@@ -71,7 +71,7 @@ class FilesController {
         name,
         type,
         isPublic,
-        parentId: parentId || 0,
+        parentId,
       })).catch((error) => {
         console.log(error);
       });
@@ -96,7 +96,7 @@ class FilesController {
           name,
           type,
           isPublic,
-          parentId: parentId || 0,
+          parentId: parentId ? ObjectID(parentId) : parentId,
           localPath: fileName,
         },
       ).then((result) => {
@@ -107,7 +107,7 @@ class FilesController {
             name,
             type,
             isPublic,
-            parentId: parentId || 0,
+            parentId,
           },
         );
         if (type === 'image') {
@@ -151,9 +151,9 @@ class FilesController {
     const files = dbClient.db.collection('files');
     let query;
     if (!parentId) {
-      query = { userId: user._id };
+      query = {};
     } else {
-      query = { userId: user._id, parentId: ObjectID(parentId) };
+      query = { parentId: ObjectID(parentId) };
     }
     files.aggregate(
       [
@@ -161,7 +161,6 @@ class FilesController {
         { $sort: { _id: -1 } },
         {
           $facet: {
-            metadata: [{ $count: 'total' }, { $addFields: { page: parseInt(pageNum, 10) } }],
             data: [{ $skip: 20 * parseInt(pageNum, 10) }, { $limit: 20 }],
           },
         },
@@ -177,7 +176,6 @@ class FilesController {
           delete tmpFile.localPath;
           return tmpFile;
         });
-        // console.log(final);
         return response.status(200).json(final);
       }
       console.log('Error occured');
